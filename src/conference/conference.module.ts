@@ -7,19 +7,36 @@ import {
   WhiteListedDomains,
   WhiteListedDomainsSchema,
 } from '../schemas/WhiteListedDomains.schema';
+import { ConferenceControllerJoona } from './conference.controller.joona';
+import { ConferenceServiceJoona } from './conference.service.joona';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Conference } from './entities/conference.entity';
+
+const isMongodb = process.env.DB_TYPE === 'mongodb';
+const isGouv = process.env.IS_GOUV === 'true';
 
 @Module({
   imports: [
     ProsodyModule,
-    MongooseModule.forFeature([
-      {
-        name: WhiteListedDomains.name,
-        schema: WhiteListedDomainsSchema,
-      },
-    ]),
+    ...(isMongodb
+      ? [
+          MongooseModule.forFeature([
+            {
+              name: WhiteListedDomains.name,
+              schema: WhiteListedDomainsSchema,
+            },
+          ]),
+        ]
+      : [TypeOrmModule.forFeature([Conference])]),
   ],
-  controllers: [ConferenceController],
-  providers: [ConferenceService],
-  exports: [ConferenceService],
+  controllers: isGouv
+    ? [ConferenceController]
+    : [ConferenceControllerJoona],
+  providers: isGouv
+    ? [ConferenceService]
+    : [ConferenceServiceJoona],
+  exports: isGouv
+    ? [ConferenceService]
+    : [ConferenceServiceJoona],
 })
 export class ConferenceModule {}

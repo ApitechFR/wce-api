@@ -4,18 +4,33 @@ import { FeedbackService } from './feedback.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Feedback, FeedbackSchema } from '../schemas/Feedback.schema';
 import { HttpModule } from '@nestjs/axios';
+import { FeedbackControllerJoona } from './feedback.controller.joona';
+import { FeedbackServiceJoona } from './feedback.service.joona';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Feedbacks } from './entities/feedback.entity';
+
+const isMongodb = process.env.DB_TYPE === 'mongodb';
+const isGouv = process.env.IS_GOUV === 'true';
 
 @Module({
   imports: [
     HttpModule,
-    MongooseModule.forFeature([
-      {
-        name: Feedback.name,
-        schema: FeedbackSchema,
-      },
-    ]),
+    ...(isMongodb
+      ? [
+          MongooseModule.forFeature([
+            {
+              name: Feedback.name,
+              schema: FeedbackSchema,
+            },
+          ]),
+        ]
+      : [TypeOrmModule.forFeature([Feedbacks])]),
   ],
-  controllers: [FeedbackController],
-  providers: [FeedbackService],
+  controllers: isGouv
+    ? [FeedbackController]
+    : [FeedbackControllerJoona],
+  providers: isGouv
+    ? [FeedbackService]
+    : [FeedbackServiceJoona],
 })
 export class FeedbackModule {}

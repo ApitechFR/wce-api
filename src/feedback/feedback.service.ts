@@ -3,6 +3,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Feedback } from '../schemas/Feedback.schema';
@@ -16,11 +17,11 @@ import { Logger } from '@nestjs/common';
 export class FeedbackService {
   private readonly logger = new Logger(FeedbackService.name);
   constructor(
-    @InjectModel(Feedback.name) private feedbackModel: Model<Feedback>,
     private configService: ConfigService,
     private readonly httpService: HttpService,
+    @Optional()
+    @InjectModel(Feedback.name) private feedbackModel?: Model<Feedback>,
   ) {}
-
   async createFeedback(body: FeedbackDTO, jmmc_id: string, ip: string) {
     const { data } = await firstValueFrom(
       this.httpService

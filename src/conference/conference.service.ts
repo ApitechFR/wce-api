@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  Optional,
 } from '@nestjs/common';
 import { ProsodyService } from '../prosody/prosody.service';
 import { JwtService } from '@nestjs/jwt';
@@ -18,12 +19,13 @@ import { MailerService } from '@nestjs-modules/mailer';
 export class ConferenceService {
   private readonly logger = new Logger(ConferenceService.name);
   constructor(
-    @InjectModel(WhiteListedDomains.name)
-    private whiteListedDomainsModel: Model<WhiteListedDomains>,
     private readonly prosodyService: ProsodyService,
     private readonly jwtService: JwtService,
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
+    @Optional()
+    @InjectModel(WhiteListedDomains.name)
+    private whiteListedDomainsModel?: Model<WhiteListedDomains>,
   ) {}
 
   async roomExists(roomName: string) {
