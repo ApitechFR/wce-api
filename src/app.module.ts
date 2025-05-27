@@ -53,7 +53,7 @@ import { DatabaseModule } from './database/database.module';
       envFilePath: `.env.${process.env.NODE_ENV}`,
       validationSchema: configValidationSchema,
     }),
-    DatabaseModule.register(new ConfigService()),
+    DatabaseModule.register(),
     AuthenticationModule,
     ConferenceModule,
     StatsModule,
@@ -63,4 +63,4 @@ import { DatabaseModule } from './database/database.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
