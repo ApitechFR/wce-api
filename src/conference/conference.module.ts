@@ -1,25 +1,50 @@
-import { ProsodyModule } from './../prosody/prosody.module';
 import { Module } from '@nestjs/common';
-import { ConferenceController } from './conference.controller';
-import { ConferenceService } from './conference.service';
+import { ConfigModule } from '@nestjs/config';
+import { HttpModule } from '@nestjs/axios';
+import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { MailerModule } from '@nestjs-modules/mailer';
 import { MongooseModule } from '@nestjs/mongoose';
-import {
-  WhiteListedDomains,
-  WhiteListedDomainsSchema,
-} from '../schemas/WhiteListedDomains.schema';
+
+import { ConferenceController } from './conference.controller';
+import { Conference } from './entities/conference.entity';
+import { ProsodyModule } from '../prosody/prosody.module';
+import { RoomNameValidator } from '../common/validators/room-name.validator';
+import { ConferenceServiceMongo } from './services/conference.service.mongo';
+import { ConferenceServiceSQL } from './services/conference.service.sql';
+import { IConferenceService } from './interfaces/conference-service.interface';
+import { WhiteListedDomains, WhiteListedDomainsSchema } from '../schemas/WhiteListedDomains.schema';
+import { Participant } from '../participant/entities/participant.entity';
+import { Replay } from 'src/replay/entities/replay.entity';
+import { User } from 'src/users/entities/users.entity';
+
+
+const isMongo = process.env.DB_TYPE === 'mongodb';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
+    HttpModule,
+    JwtModule,
+    MailerModule,
     ProsodyModule,
-    MongooseModule.forFeature([
-      {
-        name: WhiteListedDomains.name,
-        schema: WhiteListedDomainsSchema,
-      },
-    ]),
+    ...(isMongo
+      ? [
+        MongooseModule.forFeature([
+          { name: WhiteListedDomains.name, schema: WhiteListedDomainsSchema },
+        ]),
+      ]
+      : [TypeOrmModule.forFeature([Conference, Participant, Replay, User])]),
   ],
   controllers: [ConferenceController],
-  providers: [ConferenceService],
-  exports: [ConferenceService],
+  providers: [
+    RoomNameValidator,
+    ...(isMongo ? [ConferenceServiceMongo] : [ConferenceServiceSQL]),
+    {
+      provide: IConferenceService,
+      useClass: isMongo ? ConferenceServiceMongo : ConferenceServiceSQL,
+    },
+  ],
+  exports: [IConferenceService],
 })
-export class ConferenceModule {}
+export class ConferenceModule { }
