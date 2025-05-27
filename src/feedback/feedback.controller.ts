@@ -1,57 +1,54 @@
-import { FeedbackDTO } from './DTOs/feedback.dto';
-import { FeedbackService } from './feedback.service';
-import {
-  Body,
-  Controller,
-  Post,
-  Req,
-  BadRequestException,
-  Headers,
-} from '@nestjs/common';
+import { Controller, Post, Req, Body, BadRequestException, Inject, Headers } from '@nestjs/common';
 import { Request } from 'express';
-import {
-  ApiBadRequestResponse,
-  ApiBody,
-  ApiNotFoundResponse,
-  ApiOkResponse,
-} from '@nestjs/swagger';
+import { FeedbackDTO } from './DTOs/feedback.dto';
+import { IFeedbackService } from './interfaces/feedback-service.interface';
+import { Param, Get, Delete } from '@nestjs/common';
+
 @Controller('feedback')
 export class FeedbackController {
-  constructor(private feedbackService: FeedbackService) {}
+  constructor(
+    @Inject(IFeedbackService)
+    private readonly feedbackService: IFeedbackService,
+  ) { }
 
   @Post()
-  @ApiOkResponse({ description: '' })
-  @ApiBadRequestResponse({ description: 'le serveur jmmc ne repond pas' })
-  @ApiBadRequestResponse({
-    description: 'vous ne pouvez pas déposer deux avis pour la meme session',
-  })
-  @ApiNotFoundResponse({
-    description:
-      "une erreur s'est produite pendant la recherche de l'identifiant et le nom de la conférence",
-  })
-  @ApiBody({ type: FeedbackDTO })
-  createFeedback(
+  async createFeedback(
     @Req() req: Request,
     @Body() body: FeedbackDTO,
     @Headers('webconf-user-region') fromInternetHeader: string,
   ) {
-    let jmmc_id;
     const ip = req.ip;
-    const isFromInternet =
-      fromInternetHeader &&
-      fromInternetHeader.toString().toLocaleLowerCase() == 'internet';
-    if (req.signedCookies['jmmc_objectId']) {
-      jmmc_id = req.signedCookies['jmmc_objectId'];
+    const jmmcId = req.signedCookies?.['jmmc_objectId'];
+    const isFromInternet = fromInternetHeader?.toLowerCase() === 'internet';
+    const userAgent = req.headers['user-agent'];
+
+    if (!this.isSourceValid(body.isVPN, isFromInternet)) {
+      throw new BadRequestException('Veuillez vérifier les informations envoyées');
     }
-    if (
-      (body.isVPN == -1 && isFromInternet) ||
-      ((body.isVPN == 0 || body.isVPN == 1) && !isFromInternet)
-    ) {
-      return this.feedbackService.createFeedback(body, jmmc_id, ip);
-    } else {
-      throw new BadRequestException(
-        'veuillez vérifier les informations que vous avez envoyé',
-      );
-    }
+
+
+    return this.feedbackService.createFeedback(body, jmmcId, ip, userAgent);
   }
+
+
+  @Get()
+  async getAll() {
+    return this.feedbackService.getAllFeedback();
+  }
+
+  @Get(':id')
+  async getOne(@Param('id') id: string) {
+    return this.feedbackService.getFeedbackById(id);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    return this.feedbackService.deleteFeedback(id);
+  }
+
+  private isSourceValid(isVPN: number, fromInternet: boolean): boolean {
+    return (isVPN === -1 && fromInternet) || ((isVPN === 0 || isVPN === 1) && !fromInternet);
+  }
+
+
 }

@@ -1,21 +1,31 @@
 import { Module } from '@nestjs/common';
-import { FeedbackController } from './feedback.controller';
-import { FeedbackService } from './feedback.service';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Feedback, FeedbackSchema } from '../schemas/Feedback.schema';
 import { HttpModule } from '@nestjs/axios';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Feedback as FeedbackEntity } from './entities/feedback.entity';
+import { Feedback as FeedbackMongo, FeedbackSchema } from './schemas/Feedback.schema';
+import { FeedbackController } from './feedback.controller';
+import { FeedbackServiceMongo } from './services/feedback.service.mongo';
+import { FeedbackServiceSQL } from './services/feedback.service.sql';
+import { FeedbackServiceProvider } from './providers/feedback.provider';
+import { IFeedbackService } from './interfaces/feedback-service.interface';
+import { getMongoFeatureFor } from './utils/mongo-feature.util';
+
 
 @Module({
   imports: [
+    ConfigModule,
     HttpModule,
-    MongooseModule.forFeature([
-      {
-        name: Feedback.name,
-        schema: FeedbackSchema,
-      },
-    ]),
+    TypeOrmModule.forFeature([FeedbackEntity]),
+    ...getMongoFeatureFor(FeedbackMongo.name, FeedbackSchema),
   ],
   controllers: [FeedbackController],
-  providers: [FeedbackService],
+  providers: [
+    FeedbackServiceMongo,
+    FeedbackServiceSQL,
+    FeedbackServiceProvider,
+  ],
+  exports: [IFeedbackService],
 })
-export class FeedbackModule {}
+export class FeedbackModule { }
+
