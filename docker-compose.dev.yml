@@ -19,8 +19,9 @@ services:
     image: mariadb:11
     restart: always
     environment:
-      MARIADB_ROOT_PASSWORD: root
-      MARIADB_DATABASE: nest_dev
+      MARIADB_ROOT_USER: ${DB_USERNAME}
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
     ports:
       - "3306:3306"
     volumes:
