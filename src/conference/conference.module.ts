@@ -15,8 +15,8 @@ import { ConferenceServiceSQL } from './services/conference.service.sql';
 import { IConferenceService } from './interfaces/conference-service.interface';
 import { WhiteListedDomains, WhiteListedDomainsSchema } from '../schemas/WhiteListedDomains.schema';
 import { Participant } from '../participant/entities/participant.entity';
-import { Replay } from 'src/replay/entities/replay.entity';
-import { User } from 'src/users/entities/users.entity';
+import { Replay } from '../replay/entities/replay.entity';
+import { User } from '../users/entities/users.entity';
 
 
 const isMongo = process.env.DB_TYPE === 'mongodb';

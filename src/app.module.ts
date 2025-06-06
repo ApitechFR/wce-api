@@ -11,6 +11,8 @@ import { ProsodyModule } from './prosody/prosody.module';
 import { JwtModule } from '@nestjs/jwt';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { DatabaseModule } from './database/database.module';
+import { ReplayController } from './replay/replay.controller';
+import { ReplayModule } from './replay/replay.module';
 
 @Module({
   imports: [
@@ -59,6 +61,7 @@ import { DatabaseModule } from './database/database.module';
     StatsModule,
     FeedbackModule,
     ProsodyModule,
+    ReplayModule,
   ],
   controllers: [AppController],
   providers: [AppService],
