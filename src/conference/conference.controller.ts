@@ -19,7 +19,7 @@ import { ByEmailDTO } from './DTOs/byEmail.dto';
 import { JwtDTO } from './DTOs/jwt.dto';
 
 @ApiTags('Conferences')
-@Controller('conferences')
+@Controller('')
 export class ConferenceController {
   constructor(
     @Inject(IConferenceService)
@@ -27,21 +27,21 @@ export class ConferenceController {
   ) { }
 
 
-  @Post()
+  @Post('conferences')
   @ApiOkResponse({ description: 'Conférence créée avec succès' })
   async create(@Body() dto: CreateConferenceDTO) {
     return this.conferenceService.create(dto);
   }
 
 
-  @Get()
+  @Get('conferences')
   @ApiOkResponse({ description: 'Liste des conférences' })
   async findAll() {
     return this.conferenceService.findAll();
   }
 
 
-  @Get(':id')
+  @Get('conferences/:id')
   @ApiOkResponse({ description: 'Conférence trouvée' })
   @ApiNotFoundResponse({ description: 'Conférence non trouvée' })
   async findOne(@Param('id') id: string) {
@@ -49,14 +49,14 @@ export class ConferenceController {
   }
 
 
-  @Delete(':id')
+  @Delete('conferences/:id')
   @ApiOkResponse({ description: 'Conférence supprimée' })
   async delete(@Param('id') id: string) {
     return this.conferenceService.delete(id);
   }
 
 
-  @Put(':id')
+  @Put('conferences/:id')
   @ApiOkResponse({ description: 'Conférence mise à jour' })
   async update(
     @Param('id') id: string,
@@ -69,7 +69,7 @@ export class ConferenceController {
   }
 
 
-  @Get('/room-exists/:roomName')
+  @Get('roomExists/:roomName')
   @ApiOkResponse({ description: 'La salle existe' })
   @ApiNotFoundResponse({ description: "La salle n'existe pas" })
   async roomExists(@Param('roomName') roomName: string) {
@@ -77,7 +77,7 @@ export class ConferenceController {
   }
 
 
-  @Get('/token/:roomName')
+  @Get('/:roomName')
   @ApiOkResponse({ description: 'Token JWT renvoyé ou conférence déjà ouverte' })
   @ApiUnauthorizedResponse({ description: "Token requis ou non autorisé" })
   @ApiBearerAuth()
@@ -91,7 +91,7 @@ export class ConferenceController {
   }
 
   //send token by email 
-  @Post('by-email')
+  @Post('conference/create/byemail')
   @ApiOkResponse({ description: 'Email envoyé avec lien sécurisé' })
   @ApiUnauthorizedResponse({ description: "Email non autorisé (non whitelisté)" })
   @ApiBadRequestResponse({ description: "Erreur lors de l'envoi de l'email" })
