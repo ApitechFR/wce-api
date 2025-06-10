@@ -3,20 +3,10 @@ import { ReplayService } from './replay.service';
 import { CreateReplayDto, UpdateReplayDto } from './DTOs/replay.dto';
 import { Replay } from './entities/replay.entity';
 
-interface RegisterEvent {
-  confname: string;
-  eventid: string;
-  jwt: string;
-  uploadCallbackUrl: string;
-  uploadCallbackDomainUrl: string;
-}
 
 @Controller('api/visioreplay')
 export class ReplayController {
-  private tab: RegisterEvent[];
-  constructor(private readonly replayService: ReplayService) {
-    this.tab = [];
-  }
+  constructor(private readonly replayService: ReplayService) { }
 
   @Post('start_recording')
   async createReplay(@Body() data: CreateReplayDto): Promise<Replay> {
@@ -87,55 +77,29 @@ export class ReplayController {
   }
 
   @Get('register_eventid/:confname')
-  register_eventid(
+  async register_eventid(
     @Param('confname') confname: string,
     @Query('eventid') eventid: string,
     @Query('jwt') jwt: string,
     @Query('uploadcallbackurl') uploadCallbackUrl: string,
     @Query('uploadcallbackdomainurl') uploadCallbackDomainUrl: string,
   ) {
-    if (
-      !confname ||
-      !eventid ||
-      !jwt ||
-      !uploadCallbackUrl ||
-      !uploadCallbackDomainUrl
-    ) {
+    if (!eventid || !jwt || !uploadCallbackUrl || !uploadCallbackDomainUrl) {
       throw new HttpException(
         { message: 'Certains paramètres sont manquants.' },
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    if (!uploadCallbackUrl.startsWith('/')) {
-      uploadCallbackUrl = '/' + uploadCallbackUrl;
-    }
-
-    uploadCallbackDomainUrl = uploadCallbackDomainUrl.replace('/', '');
-
-    let exists = false;
-
-    this.tab.forEach((e) => {
-      if (e.confname === confname) {
-        e.eventid = eventid;
-        e.jwt = jwt;
-        e.uploadCallbackUrl = uploadCallbackUrl;
-        e.uploadCallbackDomainUrl = uploadCallbackDomainUrl;
-        exists = true;
-      }
+    await this.replayService.registerEventId({
+      confname,
+      eventid,
+      jwt,
+      uploadCallbackUrl,
+      uploadCallbackDomainUrl,
     });
 
-    if (!exists) {
-      this.tab.push({
-        confname,
-        eventid,
-        jwt,
-        uploadCallbackUrl,
-        uploadCallbackDomainUrl,
-      });
-    }
-
-    console.log('tab from register_eventid:', this.tab);
+    console.log({confname, eventid, jwt, uploadCallbackUrl, uploadCallbackDomainUrl});
 
     return {
       message: `L'eventid '${eventid}' est enregistré pour la conf '${confname}'`,

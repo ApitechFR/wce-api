@@ -4,6 +4,7 @@ import { Feedback } from '../../feedback/entities/feedback.entity';
 import { Participant } from 'src/participant/entities/participant.entity';
 import { User } from 'src/users/entities/users.entity';
 import { Replay } from 'src/replay/entities/replay.entity';
+import { RegisterEvent } from 'src/replay/entities/register_event.entity';
 
 export const createTypeOrmConfig = async (
     configService: ConfigService,
@@ -19,7 +20,7 @@ export const createTypeOrmConfig = async (
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [Feedback, Participant, User, Replay],
+        entities: [Feedback, Participant, User, Replay, RegisterEvent],
         autoLoadEntities: true,
         synchronize: configService.get('NODE_ENV') === 'development',
     };

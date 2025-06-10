@@ -7,6 +7,7 @@ import { CreateReplayDto, UpdateReplayDto } from './DTOs/replay.dto';
 import { join } from 'path';
 import * as fs from 'fs';
 import { RegisterEvent } from './entities/register_event.entity';
+import { RegisterEventDto } from './DTOs/register_event.dto';
 
 @Injectable()
 export class ReplayService {
@@ -101,5 +102,34 @@ export class ReplayService {
             where: { conference_name },
             order: { created_at: 'DESC' },
         });
+    }
+
+    async registerEventId(data: RegisterEventDto): Promise<RegisterEvent> {
+        const { confname, eventid, jwt, uploadCallbackUrl, uploadCallbackDomainUrl } = data;
+
+        const normalizedUrl = uploadCallbackUrl.startsWith('/') ? uploadCallbackUrl : '/' + uploadCallbackUrl;
+        const cleanDomainUrl = uploadCallbackDomainUrl.replace('/', '');
+
+        const existing = await this.registerEventRepository.findOne({ where: { confname } });
+
+        if (existing) {
+            existing.eventid = eventid;
+            existing.jwt = jwt;
+            existing.uploadCallbackUrl = normalizedUrl;
+            existing.uploadCallbackDomainUrl = cleanDomainUrl;
+            existing.updated_at = new Date();
+            
+            return await this.registerEventRepository.save(existing);
+        }
+
+        const event = this.registerEventRepository.create({
+            confname,
+            eventid,
+            jwt,
+            uploadCallbackUrl: normalizedUrl,
+            uploadCallbackDomainUrl: cleanDomainUrl,
+        });
+
+        return await this.registerEventRepository.save(event);
     }
 }
