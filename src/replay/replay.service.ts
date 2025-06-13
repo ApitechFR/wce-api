@@ -104,6 +104,19 @@ export class ReplayService {
         });
     }
 
+    async findRegisterEventByConfname(confname: string): Promise<RegisterEvent | null> {
+        try {
+            const registerEvent = await this.registerEventRepository.findOne({
+                where: { confname },
+            });
+
+            return registerEvent;
+        } catch (error) {
+            console.error('Erreur lors de la recherche du registerEvent :', error);
+            throw new InternalServerErrorException(error.message);
+        }
+    }
+
     async registerEventId(data: RegisterEventDto): Promise<RegisterEvent> {
         const { confname, eventid, jwt, uploadCallbackUrl, uploadCallbackDomainUrl } = data;
 
@@ -118,7 +131,7 @@ export class ReplayService {
             existing.uploadCallbackUrl = normalizedUrl;
             existing.uploadCallbackDomainUrl = cleanDomainUrl;
             existing.updated_at = new Date();
-            
+
             return await this.registerEventRepository.save(existing);
         }
 
