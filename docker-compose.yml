@@ -6,5 +6,62 @@ services:
     env_file:
       - .env
     ports:
-      - "3000:3000"
-    restart: unless-stopped
+      - "3030:3030"
+    depends_on:
+      - mariadb
+      - mongo  
+    volumes:
+      - /usr/share/jitsi-meet/:/usr/share/jitsi-meet/
+      - ./public/pictures/client/:/usr/src/app/public/pictures/client/
+      - visioreplay_data:/data/visioreplay
+
+  mariadb:
+    image: mariadb:11
+    restart: always
+    environment:
+      MARIADB_ROOT_USER: ${DB_USERNAME}
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  mongo:
+    image: mongo:6
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  visioreplay-ssh:
+    image: alpine:latest
+    env_file: ./.env
+    restart: always
+    ports:
+      - $HOST_DATA_SSH_PORT:22
+    command:
+      - /bin/sh
+      - -c
+      - addgroup --gid 101 -S jibri-k8s-record;
+        adduser --uid 1000 jibri-k8s-record -G jibri-k8s-record;
+        echo 'jibri-k8s-record:SuperlonguCledeplusde50charDeLutilisateurquinutiliserajamaissonmotdepasse' | chpasswd;
+        apk add rsync;
+        apk add --no-cache openssh;
+        echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config;
+        echo 'PermitRootLogin no' >> /etc/ssh/sshd_config;
+        ssh-keygen -A;
+        /usr/sbin/sshd -D -d -p 22;
+    volumes:
+      - ./jibri-k8s-record_home:/home/jibri-k8s-record
+      - visioreplay_data:/data
+      #user: "jibri-k8s-record"
+
+      #chmod 700 /home/jibri-k8s-record/.ssh
+      #chown -R jibri-k8s-record:jibri-k8s-record /home/jibri-k8s-record
+
+volumes:
+  mariadb_data:
+  visioreplay_data:
+  mongo_data:
