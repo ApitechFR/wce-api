@@ -7,20 +7,20 @@ import {
   Param,
   Post,
   Put,
-  Req,
   Headers,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { ApiTags, ApiBody, ApiOkResponse, ApiNotFoundResponse, ApiUnauthorizedResponse, ApiBadRequestResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 import { IConferenceService } from './interfaces/conference-service.interface';
 import { CreateConferenceDTO } from './DTOs/conference.dto';
 import { ByEmailDTO } from './DTOs/byEmail.dto';
 import { JwtDTO } from './DTOs/jwt.dto';
+import { RoomNameDto } from './DTOs/room-name.dto';
 
 @ApiTags('Conferences')
 @Controller('')
 export class ConferenceController {
+
   constructor(
     @Inject(IConferenceService)
     private readonly conferenceService: IConferenceService,
@@ -70,38 +70,60 @@ export class ConferenceController {
 
 
   @Get('roomExists/:roomName')
-  @ApiOkResponse({ description: 'La salle existe' })
-  @ApiNotFoundResponse({ description: "La salle n'existe pas" })
-  async roomExists(@Param('roomName') roomName: string) {
-    return this.conferenceService.roomExists(roomName);
+  @ApiOkResponse({ description: 'retourne roomName si la conférence existe' })
+  @ApiNotFoundResponse({ description: "retourne 404 si la conférence n'existe pas" })
+  async roomExists(@Param() params: RoomNameDto) {
+    return this.conferenceService.roomExists(params.roomName);
   }
 
 
   @Get('/:roomName')
-  @ApiOkResponse({ description: 'Token JWT renvoyé ou conférence déjà ouverte' })
-  @ApiUnauthorizedResponse({ description: "Token requis ou non autorisé" })
+  @ApiOkResponse({
+    description: 'retourne roomName si la conférence est déja ouverte',
+  })
+  @ApiOkResponse({
+    description: "retourne roomName et jwt si la conférence n'est pas ouverte",
+  })
+  @ApiNotFoundResponse({
+    description: "retourne 404 si la conférence n'existe pas",
+  })
+  @ApiUnauthorizedResponse({
+    description:
+      "veuillez vous authentifier pour accéder à la webconf de l'Etat",
+  })
+  @ApiBody({ type: RoomNameDto })
   @ApiBearerAuth()
   async getRoomAccessToken(
-    @Param('roomName') roomName: string,
-    @Headers('webconf-user-region') region: string,
-    @Headers('authorization') authHeader: string,
+    @Param() params: RoomNameDto,
+    @Headers('webconf-user-region') webconfUserRegion: string,
+    @Headers('authorization') accessToken: string,
   ) {
-    const token = authHeader?.split(' ')[1] ?? '';
-    return this.conferenceService.getRoomAccessToken(roomName, region, token);
+    accessToken = accessToken && accessToken.split(' ')[1];
+    return this.conferenceService.getRoomAccessToken(params.roomName, webconfUserRegion, accessToken);
   }
 
   //send token by email 
   @Post('conference/create/byemail')
-  @ApiOkResponse({ description: 'Email envoyé avec lien sécurisé' })
-  @ApiUnauthorizedResponse({ description: "Email non autorisé (non whitelisté)" })
-  @ApiBadRequestResponse({ description: "Erreur lors de l'envoi de l'email" })
+  @ApiOkResponse({
+    description: "retourne { isWhitelisted: true, sended: 'email sended' }",
+  })
+  @ApiOkResponse({
+    description: "retourne roomName et jwt si la conférence n'est pas ouverte",
+  })
+  @ApiBadRequestResponse({
+    description: "erreur de l'envoi de l'email",
+  })
+  @ApiUnauthorizedResponse({
+    description:
+      "retourne { isWhitelisted: false } si l'émail n'est pas autorisé",
+  })
   @ApiBody({ type: ByEmailDTO })
   async getRoomAccessTokenByEmail(
-    @Body() dto: ByEmailDTO,
-    @Req() req: Request,
+    @Body() body: ByEmailDTO,
+    @Headers('host') host: string,
   ) {
-    const host = req.get('host') || 'localhost';
-    return this.conferenceService.getRoomAccessTokenByEmail(dto, host);
+    const args = { room: body.roomName, email: body.email, host };
+    return this.conferenceService.getRoomAccessTokenByEmail(args);
   }
 
   // Check JWT token validity

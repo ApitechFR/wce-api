@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { IConferenceService } from '../interfaces/conference-service.interface';
 import { CreateConferenceDTO } from '../DTOs/conference.dto';
 import { Conference } from '../entities/conference.entity';
-import { ByEmailDTO } from '../DTOs/byEmail.dto';
 
 @Injectable()
 export class ConferenceServiceSQL implements IConferenceService {
@@ -44,16 +43,4 @@ export class ConferenceServiceSQL implements IConferenceService {
         return { roomName };
     }
 
-    async getRoomAccessToken() {
-        // Dummy fallback to simulate token behavior
-        return { roomName: 'SQL-room', jwt: 'static.jwt.token.sql' };
-    }
-
-    async getRoomAccessTokenByEmail(dto: ByEmailDTO) {
-        return { isWhitelisted: true, sended: 'email mock SQL sent' };
-    }
-
-    async verifyToken(jwt: string) {
-        return { jwt };
-    }
 }
