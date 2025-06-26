@@ -1,78 +1,75 @@
+import { FeedbackDTO } from '../DTOs/feedback.dto';
 import {
     Injectable,
-    NotFoundException,
     BadRequestException,
-    Logger,
-    Optional,
+    NotFoundException,
 } from '@nestjs/common';
-import { Model, Document } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { Feedback } from '../schemas/Feedback.schema';
+import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom, catchError } from 'rxjs';
-
-import { Feedback as FeedbackSchemaType } from '../schemas/Feedback.schema';
-import { FeedbackDTO } from '../DTOs/feedback.dto';
+import { catchError, firstValueFrom } from 'rxjs';
+import { Logger } from '@nestjs/common';
 import { IFeedbackService } from '../interfaces/feedback-service.interface';
-import { mapDtoToFeedbackEntity } from '../utils/feedback.mapper';
-
-type FeedbackDocument = FeedbackSchemaType & Document;
 
 @Injectable()
-export class FeedbackServiceMongo implements IFeedbackService<FeedbackDocument> {
+export class FeedbackServiceMongo implements IFeedbackService {
     private readonly logger = new Logger(FeedbackServiceMongo.name);
-
     constructor(
-        @Optional()
-        @InjectModel(FeedbackSchemaType.name)
-        private readonly feedbackModel: Model<FeedbackDocument>,
-        private readonly configService: ConfigService,
+        @InjectModel(Feedback.name) private feedbackModel: Model<Feedback>,
+        private configService: ConfigService,
         private readonly httpService: HttpService,
-    ) {
-        if (!this.feedbackModel) {
-            this.logger.warn(
-                '[FeedbackServiceMongo] Le modèle Mongoose Feedback est indisponible (MongoDB désactivé ?)',
+    ) { }
+
+    async createFeedback(body: FeedbackDTO, jmmc_id: string, ip: string) {
+        const { data } = await firstValueFrom(
+            this.httpService
+                .get(
+                    this.configService.get('JMMC_URL') + '/objectId?jmmc_id=' + jmmc_id,
+                )
+                .pipe(
+                    catchError((err: any) => {
+                        if (err.response && err.response.data) {
+                            throw new NotFoundException(err.response.data.message);
+                        }
+                        this.logger.error('le serveur jmmc ne repond pas');
+                        throw new BadRequestException('le serveur jmmc ne repond pas');
+                    }),
+                ),
+        );
+        if (data) {
+            const allreadyExists = await this.feedbackModel.findById(jmmc_id);
+            if (!allreadyExists) {
+                const metric = await new this.feedbackModel({
+                    ip: this.ip2int(ip),
+                    ...body,
+                    jmmc_id,
+                });
+                return metric.save();
+            } else {
+                this.logger.error(
+                    'vous ne pouvez pas déposer deux avis pour la meme session',
+                );
+                throw new BadRequestException(
+                    'vous ne pouvez pas déposer deux avis pour la meme session',
+                );
+            }
+        } else {
+            this.logger.error(
+                "une erreur s'est produite pendant la recherche de l'identifiant et le nom de la conférence",
+            );
+            throw new NotFoundException(
+                "une erreur s'est produite pendant la recherche de l'identifiant et le nom de la conférence",
             );
         }
     }
 
-    async createFeedback(dto: FeedbackDTO, jmmcId: string, ip: string) {
-        if (!this.feedbackModel) throw new Error('FeedbackModel is not available');
-
-        const { data } = await firstValueFrom(
-            this.httpService
-                .get(`${this.configService.get('JMMC_URL')}/objectId?jmmc_id=${jmmcId}`)
-                .pipe(
-                    catchError(() => {
-                        this.logger.error('Le serveur JMMC ne répond pas');
-                        throw new NotFoundException('Erreur lors de la recherche JMMC');
-                    }),
-                ),
+    ip2int(ip) {
+        return (
+            ip.split('.').reduce(function (ipInt, octet) {
+                return (ipInt << 8) + parseInt(octet, 10);
+            }, 0) >>> 0
         );
-
-        const alreadyExists = await this.feedbackModel.findOne({ jmmc_id: jmmcId });
-
-        if (alreadyExists) {
-            throw new BadRequestException('Feedback déjà soumis pour cette session');
-        }
-
-        const feedbackData = mapDtoToFeedbackEntity(dto, ip, jmmcId);
-        const feedback = new this.feedbackModel(feedbackData);
-        return feedback.save();
-    }
-
-    async getAllFeedback() {
-        if (!this.feedbackModel) throw new Error('FeedbackModel is not available');
-        return this.feedbackModel.find().exec();
-    }
-
-    async getFeedbackById(id: string) {
-        if (!this.feedbackModel) throw new Error('FeedbackModel is not available');
-        return this.feedbackModel.findById(id).exec();
-    }
-
-    async deleteFeedback(id: string) {
-        if (!this.feedbackModel) throw new Error('FeedbackModel is not available');
-        await this.feedbackModel.findByIdAndDelete(id).exec();
     }
 }
