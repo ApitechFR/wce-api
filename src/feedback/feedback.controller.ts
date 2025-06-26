@@ -30,7 +30,7 @@ export class FeedbackController {
   ) {
     const ip = req.ip;
     const jmmc_id = req.signedCookies?.['jmmc_objectId'];
-    const isFromInternet = fromInternetHeader?.toLowerCase() === 'internet';
+    const isFromInternet = fromInternetHeader?.toLocaleLowerCase() === 'internet';
 
     const isValidVPNContext =
       (body.isVPN === -1 && isFromInternet) ||
