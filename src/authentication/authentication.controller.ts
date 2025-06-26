@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import * as crypto from 'crypto';
-import { ConferenceService } from '../conference/conference.service';
+
 import { JwtService } from '@nestjs/jwt';
 import * as moment from 'moment';
 import { LoginCallbackDTO } from './DTOs/LoginCallbackDTO';
@@ -31,7 +31,7 @@ export class AuthenticationController {
   constructor(
     private readonly authenticationService: AuthenticationService,
     @Inject(IConferenceService)
-    private readonly conferenceService: ConferenceService,
+    private readonly conferenceService: IConferenceService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) { }
