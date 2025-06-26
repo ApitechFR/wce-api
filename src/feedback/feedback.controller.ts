@@ -30,7 +30,11 @@ export class FeedbackController {
   ) {
     const ip = req.ip;
     const jmmc_id = req.signedCookies?.['jmmc_objectId'];
+<<<<<<< refactor/visio-service-unification
     const isFromInternet = fromInternetHeader?.toLocaleLowerCase() === 'internet';
+=======
+    const isFromInternet = fromInternetHeader?.toLowerCase() === 'internet';
+>>>>>>> dev
 
     const isValidVPNContext =
       (body.isVPN === -1 && isFromInternet) ||
