@@ -9,10 +9,11 @@ import {
   Req,
   Headers,
   UnauthorizedException,
+  Inject,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import * as crypto from 'crypto';
-import { ConferenceService } from '../conference/conference.service';
+
 import { JwtService } from '@nestjs/jwt';
 import * as moment from 'moment';
 import { LoginCallbackDTO } from './DTOs/LoginCallbackDTO';
@@ -23,15 +24,17 @@ import {
   ApiNotFoundResponse,
   ApiResponse,
 } from '@nestjs/swagger';
+import { IConferenceService } from '../conference/interfaces/conference-service.interface';
 
 @Controller('authentication')
 export class AuthenticationController {
   constructor(
     private readonly authenticationService: AuthenticationService,
-    private readonly conferenceService: ConferenceService,
+    @Inject(IConferenceService)
+    private readonly conferenceService: IConferenceService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   @Get('whereami')
   @ApiOkResponse({ description: "retoune 'RIE' ou 'INTERNET' " })

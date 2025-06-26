@@ -19,7 +19,7 @@ export class FeedbackService {
     @InjectModel(Feedback.name) private feedbackModel: Model<Feedback>,
     private configService: ConfigService,
     private readonly httpService: HttpService,
-  ) {}
+  ) { }
 
   async createFeedback(body: FeedbackDTO, jmmc_id: string, ip: string) {
     const { data } = await firstValueFrom(

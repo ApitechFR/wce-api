@@ -1,6 +1,7 @@
 import * as joi from 'joi';
 // env vars validation
 export const configValidationSchema = joi.object({
+  DB_TYPE: joi.string().valid('mongodb', 'mariadb').required(),
   JMMC_URL: joi.string().uri().required(),
   COOKIE_SECRET: joi.string().required(),
   //agentConnect
@@ -29,12 +30,34 @@ export const configValidationSchema = joi.object({
   JITSI_JITSIJWT_SECRET: joi.string().required(),
   JITSI_JITSIJWT_SUB: joi.string().required(),
   //mongodb
-  MONGO_URI: joi.string().required(),
+  MONGO_URI: joi.when('DB_TYPE', {
+    is: 'mongodb',
+    then: joi.string()
+      .uri({ scheme: ['mongodb', 'mongodb+srv'] })
+      .required()
+      .messages({
+        'any.required': 'MONGO_URI is required when DB_TYPE is mongodb',
+        'string.uri': 'MONGO_URI doit commencer par "mongodb://" ou "mongodb+srv://"',
+      }),
+    otherwise: joi.string().optional().allow('', null),
+  }),
+
   MONGODB_USENEWURLPARSER: joi.boolean(),
   MONGODB_USEUNIFIEDTOPOLOGY: joi.boolean(),
+
+  // MariaDB
+  DB_HOST: joi.string().when('DB_TYPE', { is: 'mariadb', then: joi.required() }),
+  DB_PORT: joi.number().default(3306),
+  DB_USERNAME: joi.string().when('DB_TYPE', { is: 'mariadb', then: joi.required() }),
+  DB_PASSWORD: joi.string().when('DB_TYPE', { is: 'mariadb', then: joi.required() }),
+  DB_NAME: joi.string().when('DB_TYPE', { is: 'mariadb', then: joi.required() }),
+
   //prosody
   PROSODY_AVAILABLE_INSTANCES: joi.string().required(),
   PROSODY_DOMAIN: joi.string().required(),
   //jicofo
   JICOFO_AVAILABLE_INSTANCES: joi.string().required(),
+
+  //environment
+  NODE_ENV: joi.string().valid('development', 'production', 'test').default('development'),
 });

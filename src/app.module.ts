@@ -6,11 +6,45 @@ import { AuthenticationModule } from './authentication/authentication.module';
 import { ConferenceModule } from './conference/conference.module';
 import { StatsModule } from './stats/stats.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
 import { FeedbackModule } from './feedback/feedback.module';
 import { ProsodyModule } from './prosody/prosody.module';
 import { JwtModule } from '@nestjs/jwt';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+function getDatabaseImports() {
+  const dbType = process.env.DB_TYPE;
+  if (dbType === 'mongodb') {
+    return [
+      MongooseModule.forRootAsync({
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: async (configService: ConfigService) => ({
+          uri: configService.get<string>('MONGODB_URI') || 'mongodb://localhost/wce',
+        }),
+      }),
+    ];
+  } else if (dbType === 'mariaDB' || dbType === 'mysql') {
+    return [
+      TypeOrmModule.forRootAsync({
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: async (configService: ConfigService) => ({
+          type: 'mariadb',
+          host: configService.get('DB_HOST'),
+          port: parseInt(configService.get('DB_PORT'), 10) || 3306,
+          username: configService.get('DB_USERNAME'),
+          password: configService.get('DB_PASSWORD'),
+          database: configService.get('DB_DATABASE'),
+          autoLoadEntities: true,
+          synchronize: configService.get<string>('NODE_ENV') !== 'production',
+        }),
+      }),
+    ];
+  }
+  return [];
+}
 
 @Module({
   imports: [
@@ -40,6 +74,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
         };
       },
     }),
+    ...getDatabaseImports(),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -53,15 +88,6 @@ import { MailerModule } from '@nestjs-modules/mailer';
       envFilePath: `.env.${process.env.NODE_ENV}`,
       validationSchema: configValidationSchema,
     }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        return {
-          uri: configService.get('MONGO_URI'),
-        };
-      },
-    }),
     AuthenticationModule,
     ConferenceModule,
     StatsModule,
@@ -71,4 +97,4 @@ import { MailerModule } from '@nestjs-modules/mailer';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
