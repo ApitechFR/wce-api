@@ -1,11 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
-import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MailerModule } from '@nestjs-modules/mailer';
 import { MongooseModule } from '@nestjs/mongoose';
-
 import { ConferenceController } from './conference.controller';
 import { Conference } from './entities/conference.entity';
 import { ProsodyModule } from '../prosody/prosody.module';
@@ -19,16 +16,11 @@ import { Replay } from 'src/replay/entities/replay.entity';
 import { User } from 'src/users/entities/users.entity';
 
 
-const isMongo = process.env.DB_TYPE === 'mongodb';
-
 @Module({
   imports: [
-    ConfigModule.forRoot(),
     HttpModule,
-    JwtModule,
-    MailerModule,
     ProsodyModule,
-    ...(isMongo
+    ...(process.env.DB_TYPE === 'mongodb'
       ? [
         MongooseModule.forFeature([
           { name: WhiteListedDomains.name, schema: WhiteListedDomainsSchema },
@@ -39,12 +31,26 @@ const isMongo = process.env.DB_TYPE === 'mongodb';
   controllers: [ConferenceController],
   providers: [
     RoomNameValidator,
-    ...(isMongo ? [ConferenceServiceMongo] : [ConferenceServiceSQL]),
-    {
-      provide: IConferenceService,
-      useClass: isMongo ? ConferenceServiceMongo : ConferenceServiceSQL,
-    },
+    ...(process.env.DB_TYPE === 'mongodb'
+      ? [
+        ConferenceServiceMongo,
+        {
+          provide: IConferenceService,
+          inject: [ConferenceServiceMongo, ConfigService],
+          useFactory: (mongo: ConferenceServiceMongo, configService: ConfigService) => mongo,
+        },
+      ]
+      : [
+        ConferenceServiceSQL,
+        {
+          provide: IConferenceService,
+          inject: [ConferenceServiceSQL, ConfigService],
+          useFactory: (sql: ConferenceServiceSQL, configService: ConfigService) => sql,
+        },
+      ]),
   ],
   exports: [IConferenceService],
 })
 export class ConferenceModule { }
+
+
