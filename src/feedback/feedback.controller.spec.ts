@@ -34,6 +34,13 @@ describe('FeedbackController', () => {
     expect(result).toEqual({ status: 'ok' });
   });
 
+
+  it('should throw BadRequestException if VPN context is invalid', async () => {
+    const dto = { isVPN: 1, rt: { qty: 3 }, com: 'test' } as FeedbackDTO;
+    const req = { ip: '127.0.0.1', signedCookies: { jmmc_objectId: 'abc123' }, headers: { 'user-agent': 'test' } } as any;
+    await expect(controller.createFeedback(req, dto, 'internet')).rejects.toThrow('Veuillez vérifier les informations que vous avez envoyées.');
+  });
+
   it('should get all feedbacks', async () => {
     const result = await controller.getAll();
     expect(result).toEqual([{ id: '1' }]);
