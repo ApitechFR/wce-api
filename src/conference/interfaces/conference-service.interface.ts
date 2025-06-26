@@ -16,5 +16,7 @@ export interface IConferenceService<T = any> {
     roomExists?(roomName: string): Promise<{ roomName: string }>;
     getRoomAccessTokenByEmail?(params: { room: string; email: string; host: string; }): Promise<{ isWhitelisted: boolean; sended: string }>;
     verifyToken?(jwt: string): { jwt: string } | void;
+    isInternalUser?(webconfUserRegion: string): boolean;
+    sendToken?(roomName: string): { roomName: string; jwt: string };
 
 }
